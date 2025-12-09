@@ -5,5 +5,12 @@ IDMHound is a BloodHound ingestor for FreeIPA and Red Hat Identity Manager envir
 ## Installation
 
 ```
+git clone https://github.com/lvruibr/idmhound
 pip install .
+```
+
+## Usage
+
+```
+idmhound -dc <SERVER> -u <USERNAME> -p <PASSWORD> -d <REALM>
 ```
