@@ -20,8 +20,9 @@ def main():
     data = ldap.collect(args.domain_controller, bind_dn, args.password, args.base_dn)
     sid = identify_realm_sid(data, args.domain)
 
-    domains, users, groups, computers = ldap.parse(data, args.domain, sid)
-    group_member_lookup(users, computers, groups)
+    domains, users, groups, computers, hbac = ldap.parse(data, args.domain, sid)
+    member_lookup(users+computers, groups)
+    member_lookup(users+computers+groups, hbac)
 
 
 
@@ -33,7 +34,8 @@ def main():
         output.write(json.dumps(to_json(groups, "groups")))
     with open("computers.json", "w") as output:
         output.write(json.dumps(to_json(computers, "computers")))
-
+    with open("hbac.json", "w") as output:
+        output.write(json.dumps(to_opengraph(hbac)))
 
 
 if __name__ == "__main__":

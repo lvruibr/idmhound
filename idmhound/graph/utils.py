@@ -1,9 +1,11 @@
 # -*- coding:utf -*-
 import re
 
-def group_member_lookup(users: list, computers: list, groups: list):
-    for group in groups:
-        group.resolve_member_dn(users+computers)
+def member_lookup(principals: list, subjects: list):
+    for subject in subjects:
+        subject.resolve_member_dn(principals)
+
+
 
 
 def to_json(data: list, object_type) -> dict:
@@ -13,6 +15,13 @@ def to_json(data: list, object_type) -> dict:
         "type": object_type,
         "count": len(data), "version": 5
     }}
+
+def to_opengraph(data: list) -> dict:
+    opengraph = []
+    for entry in data:
+        opengraph.extend(entry.to_json())
+    return {"graph": {"nodes": [],"edges": opengraph}}
+
 
 def identify_realm_sid(data: list, realm: str) -> str:
 
