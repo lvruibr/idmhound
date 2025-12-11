@@ -14,3 +14,12 @@ pip install .
 ```
 idmhound -dc <SERVER> -u <USERNAME> -p <PASSWORD> -d <REALM>
 ```
+
+## Example Cypher queries
+
+*List users part of groups that can SSH*
+```
+MATCH p=(:User)-[]-(:Group)-[:HBAC_sshd]->(:Group)
+RETURN p
+LIMIT 1000
+```

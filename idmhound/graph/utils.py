@@ -17,12 +17,19 @@ def to_json(data: list, object_type) -> dict:
         "count": len(data), "version": 5
     }}
 
-def to_opengraph(data: list) -> dict:
+def to_opengraph(nodes: list, edges: list) -> dict:
+    formatted_nodes = [node.to_json() for node in nodes]
+    formatted_edges = []
+    for edge in edges:
+        formatted_edges.extend(edge.to_json())
+    return {"metadata":{"source_kind":"IDMHound"},"graph": {"nodes": formatted_nodes,"edges": formatted_edges}}
+
+def to_opengraph_hbac(data: list) -> dict:
     opengraph = []
     for entry in data:
+        print(entry.starts)
         opengraph.extend(entry.to_json())
     return {"graph": {"nodes": [],"edges": opengraph}}
-
 
 def identify_realm_sid(data: list, realm: str) -> str:
 
@@ -33,7 +40,7 @@ def identify_realm_sid(data: list, realm: str) -> str:
     else:
         raise ValueError("Cannot identify realm SID.")
 
-def legacy_save(domains, users, groups, computers):
+def legacy_save(domains, users, groups, computers, hbac):
 
     with open("domains.json", "w") as output:
         output.write(json.dumps(to_json(domains, "domains")))
@@ -43,3 +50,5 @@ def legacy_save(domains, users, groups, computers):
         output.write(json.dumps(to_json(groups, "groups")))
     with open("computers.json", "w") as output:
         output.write(json.dumps(to_json(computers, "computers")))
+    with open("hbac.json", "w") as output:
+        output.write(json.dumps(to_opengraph_hbac(hbac)))

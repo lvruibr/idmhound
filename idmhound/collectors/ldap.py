@@ -3,6 +3,7 @@
 import re
 import ldap3.abstract.entry
 
+from idmhound.graph.nodes import *
 from idmhound.graph.legacy_nodes import *
 from idmhound.graph.edges import *
 from idmhound.graph.utils import *
@@ -23,30 +24,25 @@ def collect(server: str, username: str, password: str, base: str) -> list:
 
 def parse(raw, realm, sid):
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac = [], [], [], [], []
-    num_objects = len(raw) + 1000
+    domains, users, groups, computers, hbac, membership = [], [], [], [], [], []
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
         if re.match(f"cn=.+,cn=ad,cn=etc,dc=lab,dc=lo", dn):
-            realm_object = Domain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"], entry["ipaNTSecurityIdentifier"],sid)
+            realm_object = Domain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"],sid)
             domains.append(realm_object)
         elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn):
             realm_object = User(dn, entry["cn"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
-                                entry["ipaNTSecurityIdentifier"], entry["krbCanonicalName"], entry["krbPrincipalName"],
+                                entry["krbCanonicalName"], entry["krbPrincipalName"],
                                 entry["loginShell"], entry["sn"], entry["uid"], entry["uidNumber"],sid)
             users.append(realm_object)
-        elif re.match(f"cn=.+,cn=groups,cn=accounts{ldap_realm}", dn) and all(
-                attr in entry.entry_attributes_as_dict.keys() for attr in ["cn","ipaUniqueID", "ipaNTSecurityIdentifier", "member"]):
-            realm_object = Group(dn, entry["cn"], entry["ipaUniqueID"], entry["ipaNTSecurityIdentifier"], entry["member"],sid)
-            groups.append(realm_object)
         elif re.match(f"cn=.+,cn=(hostgroups|groups),cn=accounts{ldap_realm}", dn) and all(
                 attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "member"]):
-            realm_object = Group(dn, entry["cn"], entry["ipaUniqueID"], sid+"-"+str(num_objects+index), entry["member"],sid)
+            realm_object = Group(dn, entry["cn"], entry["ipaUniqueID"], entry["member"],sid)
+            membership.append(Membership(realm_object.member_dn, [realm_object.get_dn()]))
             groups.append(realm_object)
         elif re.match(f"fqdn=.+,cn=computers,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "krbCanonicalName", "krbPrincipalName", "fqdn"]):
-            realm_object = Computer(dn, entry["cn"], entry["ipaUniqueID"], sid+"-"+str(num_objects+index), entry["krbCanonicalName"],
-                                    entry["krbPrincipalName"], entry["fqdn"],sid)
+            realm_object = Computer(dn, entry["cn"], entry["ipaUniqueID"], entry["krbCanonicalName"], entry["krbPrincipalName"], entry["fqdn"],sid)
             computers.append(realm_object)
         elif re.match(f"ipaUniqueID=.+,cn=hbac{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["ipaUniqueID", "ipaEnabledFlag"]) and str(entry["ipaEnabledFlag"]) == "True":
             members, hosts, services, ipaid = parse_hbac(entry)
@@ -55,7 +51,8 @@ def parse(raw, realm, sid):
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
 
-    return domains, users, groups, computers, hbac
+
+    return domains, users, groups, computers, hbac, membership
 
 def legacy_parse(raw, realm, sid):
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
@@ -81,9 +78,12 @@ def legacy_parse(raw, realm, sid):
             realm_object = LegacyGroup(dn, entry["cn"], entry["ipaUniqueID"], sid+"-"+str(num_objects+index), entry["member"],sid)
             groups.append(realm_object)
         elif re.match(f"fqdn=.+,cn=computers,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "krbCanonicalName", "krbPrincipalName", "fqdn"]):
-            realm_object = LegacyComputer(dn, entry["cn"], entry["ipaUniqueID"], sid+"-"+str(num_objects+index), entry["krbCanonicalName"],
-                                    entry["krbPrincipalName"], entry["fqdn"],sid)
+            realm_object = LegacyComputer(dn, entry["cn"], entry["ipaUniqueID"], sid+"-"+str(num_objects+index), entry["krbCanonicalName"], entry["krbPrincipalName"], entry["fqdn"],sid)
             computers.append(realm_object)
+        elif re.match(f"ipaUniqueID=.+,cn=hbac{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["ipaUniqueID", "ipaEnabledFlag"]) and str(entry["ipaEnabledFlag"]) == "True":
+            members, hosts, services, ipaid = parse_hbac(entry)
+            hbac.append(HBAC(members, hosts, services, ipaid))
+
 
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
