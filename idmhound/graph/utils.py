@@ -1,6 +1,7 @@
 # -*- coding:utf -*-
-import re
 
+import re
+import json
 def member_lookup(principals: list, subjects: list):
     for subject in subjects:
         subject.resolve_member_dn(principals)
@@ -32,3 +33,13 @@ def identify_realm_sid(data: list, realm: str) -> str:
     else:
         raise ValueError("Cannot identify realm SID.")
 
+def legacy_save(domains, users, groups, computers):
+
+    with open("domains.json", "w") as output:
+        output.write(json.dumps(to_json(domains, "domains")))
+    with open("users.json", "w") as output:
+        output.write(json.dumps(to_json(users, "users")))
+    with open("groups.json", "w") as output:
+        output.write(json.dumps(to_json(groups, "groups")))
+    with open("computers.json", "w") as output:
+        output.write(json.dumps(to_json(computers, "computers")))

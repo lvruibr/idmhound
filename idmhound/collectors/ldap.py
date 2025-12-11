@@ -1,11 +1,11 @@
 # -*- coding:utf-8 -*-
 
 import re
-
 import ldap3.abstract.entry
 
-from idmhound.graph.nodes import *
+from idmhound.graph.legacy_nodes import *
 from idmhound.graph.edges import *
+from idmhound.graph.utils import *
 from ldap3 import Server, Connection, ALL, SUBTREE
 
 
@@ -57,6 +57,42 @@ def parse(raw, realm, sid):
 
     return domains, users, groups, computers, hbac
 
+def legacy_parse(raw, realm, sid):
+    ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
+    domains, users, groups, computers, hbac = [], [], [], [], []
+    num_objects = len(raw) + 1000
+    for index, entry in enumerate(raw):
+        dn = entry.entry_dn
+        realm_object = None
+        if re.match(f"cn=.+,cn=ad,cn=etc,dc=lab,dc=lo", dn):
+            realm_object = LegacyDomain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"], entry["ipaNTSecurityIdentifier"],sid)
+            domains.append(realm_object)
+        elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn):
+            realm_object = LegacyUser(dn, entry["cn"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
+                                entry["ipaNTSecurityIdentifier"], entry["krbCanonicalName"], entry["krbPrincipalName"],
+                                entry["loginShell"], entry["sn"], entry["uid"], entry["uidNumber"],sid)
+            users.append(realm_object)
+        elif re.match(f"cn=.+,cn=groups,cn=accounts{ldap_realm}", dn) and all(
+                attr in entry.entry_attributes_as_dict.keys() for attr in ["cn","ipaUniqueID", "ipaNTSecurityIdentifier", "member"]):
+            realm_object = LegacyGroup(dn, entry["cn"], entry["ipaUniqueID"], entry["ipaNTSecurityIdentifier"], entry["member"],sid)
+            groups.append(realm_object)
+        elif re.match(f"cn=.+,cn=(hostgroups|groups),cn=accounts{ldap_realm}", dn) and all(
+                attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "member"]):
+            realm_object = LegacyGroup(dn, entry["cn"], entry["ipaUniqueID"], sid+"-"+str(num_objects+index), entry["member"],sid)
+            groups.append(realm_object)
+        elif re.match(f"fqdn=.+,cn=computers,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "krbCanonicalName", "krbPrincipalName", "fqdn"]):
+            realm_object = LegacyComputer(dn, entry["cn"], entry["ipaUniqueID"], sid+"-"+str(num_objects+index), entry["krbCanonicalName"],
+                                    entry["krbPrincipalName"], entry["fqdn"],sid)
+            computers.append(realm_object)
+
+        if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
+            realm_object.set_desc(entry["description"])
+
+    return domains, users, groups, computers, hbac
+
+
+
+
 def parse_hbac(entry: ldap3.abstract.entry.Entry):
     """Parse an HBAC LDAP entry."""
 
@@ -74,6 +110,8 @@ def parse_hbac(entry: ldap3.abstract.entry.Entry):
         services = list(entry["memberService"])
 
     return members, hosts, services, entry["ipaUniqueID"]
+
+
 
 if __name__ == "__main__":
     pass
