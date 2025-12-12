@@ -1,6 +1,10 @@
 # IDMHound
 
-IDMHound is a BloodHound ingestor for FreeIPA and Red Hat Identity Manager environments.
+IDMHound is a [BloodHound](https://bloodhound.specterops.io/) ingestor for FreeIPA and Red Hat Identity Manager environments.
+
+It collects users, groups, domains, computers and HBAC relationships and can export them in Opengraph format or in the legacy Bloodhound file format.
+
+Analysing of the relationship helps identifying privilege and lateral movements paths within the FreeIPA / Red Hat Identity Management realms.
 
 ## Installation
 
@@ -17,13 +21,21 @@ By default, the results are saved in a JSON file in the Opengraph format.
 idmhound -dc <SERVER> -u <USERNAME> -p <PASSWORD> -d <REALM>
 ```
 
-Alternatively the legacy Bloodhound file format is also supported.
+Alternatively the legacy Bloodhound file format (or a mix of both) is also supported.
 
 ```
 idmhound -dc <SERVER> -u <USERNAME> -p <PASSWORD> -d <REALM> --legacy
 ```
 
 ## Example Cypher queries
+
+*List members of highly privileged (_T0_) groups*
+```
+MATCH p=(u:User)-[:MemberOf]->(g:Group)
+WHERE g.name IN ['ADMINS', 'TRUST ADMINS']
+RETURN p
+LIMIT 1000;
+```
 
 *List users part of groups that can SSH*
 ```
