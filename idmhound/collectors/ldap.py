@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import re
+import logging
 import ldap3.abstract.entry
 from idmhound.graph.nodes import *
 from idmhound.graph.legacy_nodes import *
@@ -8,6 +9,7 @@ from idmhound.graph.edges import *
 from idmhound.graph.utils import *
 from ldap3 import Server, Connection, ALL, SUBTREE
 
+logger = logging.getLogger()
 
 def collect(server: str, username: str, password: str, base: str) -> list:
     """Collect data by performing an LDAP query.
@@ -40,7 +42,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
-        if re.match(f"cn=.+,cn=ad,cn=etc,dc=lab,dc=lo", dn):
+        if re.match(f"cn=.+,cn=ad,cn=etc{ldap_realm}", dn):
             realm_object = Domain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"], sid)
             domains.append(realm_object)
         elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn):
@@ -68,6 +70,11 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
 
+    logger.info(f"Found {len(domains)} domains.")
+    logger.info(f"Found {len(users)} domains.")
+    logger.info(f"Found {len(groups)} domains.")
+    logger.info(f"Found {len(computers)} domains.")
+
     return domains, users, groups, computers, hbac, membership
 
 
@@ -84,7 +91,7 @@ def legacy_parse(raw, realm, sid) -> tuple:
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
-        if re.match(f"cn=.+,cn=ad,cn=etc,dc=lab,dc=lo", dn):
+        if re.match(f"cn=.+,cn=ad,cn=etc{ldap_realm}", dn):
             realm_object = LegacyDomain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"],
                                         entry["ipaNTSecurityIdentifier"], sid)
             domains.append(realm_object)
@@ -119,6 +126,11 @@ def legacy_parse(raw, realm, sid) -> tuple:
 
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
+
+    logger.info(f"Found {len(domains)} domains.")
+    logger.info(f"Found {len(users)} domains.")
+    logger.info(f"Found {len(groups)} domains.")
+    logger.info(f"Found {len(computers)} domains.")
 
     return domains, users, groups, computers, hbac
 

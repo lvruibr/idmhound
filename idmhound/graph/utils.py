@@ -2,7 +2,10 @@
 
 import re
 import json
+import logging
+from datetime import datetime
 
+logger = logging.getLogger()
 
 def member_lookup(principals: list, subjects: list):
     """Convert the DN of an account to its SID for graphing.
@@ -73,13 +76,20 @@ def legacy_save(domains, users, groups, computers, hbac):
     :param computers: computers in legacy JSON format.
     :param hbac: HBAC in Opengraph format."""
 
-    with open("domains.json", "w") as output:
+    now = datetime.now().strftime("%Y%m%d%H%M%S")
+    logger.info(f"Saved domains to legacy file format: domains_{now}.json")
+    logger.info(f"Saved users to legacy file format: users_{now}.json")
+    logger.info(f"Saved groups to legacy file format: groups_{now}.json")
+    logger.info(f"Saved computers to legacy file format: computers_{now}.json")
+    logger.info(f"Saved HBAC to Opengraph file format: hbac_{now}.json")
+
+    with open(f"domains_{now}.json", "w") as output:
         output.write(json.dumps(to_json(domains, "domains")))
-    with open("users.json", "w") as output:
+    with open(f"users_{now}.json", "w") as output:
         output.write(json.dumps(to_json(users, "users")))
-    with open("groups.json", "w") as output:
+    with open(f"groups_{now}.json", "w") as output:
         output.write(json.dumps(to_json(groups, "groups")))
-    with open("computers.json", "w") as output:
+    with open(f"computers_{now}.json", "w") as output:
         output.write(json.dumps(to_json(computers, "computers")))
-    with open("hbac.json", "w") as output:
+    with open(f"hbac_{now}.json", "w") as output:
         output.write(json.dumps(to_opengraph_hbac(hbac)))

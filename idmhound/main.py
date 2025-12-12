@@ -4,6 +4,9 @@ import json
 from idmhound.graph.utils import *
 from idmhound.collectors import ldap
 import argparse
+import logging
+import sys
+from datetime import datetime
 
 
 def main():
@@ -17,20 +20,32 @@ def main():
     parser.add_argument("-l", "--legacy", action="store_true", default=False)
     args = parser.parse_args()
 
-    bind_dn = f"uid={args.username},cn=users,cn=accounts,dc=lab,dc=lo"
-    data = ldap.collect(args.domain_controller, bind_dn, args.password, args.base_dn)
-    sid = identify_realm_sid(data, args.domain)
+    logging.basicConfig(stream=sys.stdout, encoding="utf-8", filemode="w", level=logging.INFO,
+                        format="{asctime} - {levelname}: {message}", style="{", datefmt="%d-%m-%Y %H:%M:%S")
+    logger = logging.getLogger()
 
+    logger.info(f"Getting LDAP data of {args.domain}...")
+    ldap_realm = "".join([",dc=" + dc for dc in args.domain.split(".")])
+    bind_dn = f"uid={args.username},cn=users,cn=accounts{ldap_realm}"
+    data = ldap.collect(args.domain_controller, bind_dn, args.password, args.base_dn)
+    logger.info(f"Found {len(data)} LDAP entries.")
+    sid = identify_realm_sid(data, args.domain)
+    logger.info(f"Realm SID: {sid}")
+
+    logger.info("Parsing LDAP data...")
     if args.legacy:
         domains, users, groups, computers, hbac = ldap.legacy_parse(data, args.domain, sid)
         member_lookup(users+computers+groups, groups)
         member_lookup(users+computers+groups, hbac)
+        logger.info("Save output to legacy JSON file format.")
         legacy_save(domains, users, groups, computers, hbac)
     else:
         domains, users, groups, computers, hbac, membership = ldap.parse(data, args.domain, sid)
         member_lookup(users+computers+groups, membership)
         member_lookup(users+computers+groups, hbac)
-        with open("idmhound.json","w") as output:
+        now = datetime.now().strftime("%Y%m%d%H%M%S")
+        logger.info(f"Save output to Opengraph file format: idmhound_{now}.json")
+        with open(f"idmhound_{now}.json","w") as output:
             output.write(json.dumps(to_opengraph(domains+users+groups+computers, hbac+membership)))
 
 
