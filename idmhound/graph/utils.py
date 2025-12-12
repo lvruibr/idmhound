@@ -60,8 +60,9 @@ def identify_realm_sid(data: list, realm: str) -> str:
     :param realm: name of the realm.
     :return: SID of the realm."""
 
+    ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
     for entry in data:
-        if re.match(f"cn={realm},cn=ad,cn=etc,dc=lab,dc=lo", entry.entry_dn):
+        if re.match(f"cn={realm},cn=ad,cn=etc{ldap_realm}", entry.entry_dn):
             sid = str(entry["ipaNTSecurityIdentifier"])
             return sid
     else:
