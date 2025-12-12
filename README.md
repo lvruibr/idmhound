@@ -10,6 +10,7 @@ Analysing of the relationship helps identifying privilege and lateral movements 
 
 ```
 git clone https://github.com/lvruibr/idmhound
+cd idmhound
 pip install .
 ```
 
