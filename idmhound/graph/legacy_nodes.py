@@ -96,6 +96,8 @@ class LegacyGroup(LegacyNode):
                 self.member.append({"ObjectIdentifier": account.get_id(), "ObjectType": "User"})
             elif isinstance(account, LegacyComputer) and account.get_dn() in self.member_dn:
                 self.member.append({"ObjectIdentifier": account.get_id(), "ObjectType": "Computer"})
+            elif isinstance(account, LegacyGroup) and account.get_dn() in self.member_dn:
+                self.member.append({"ObjectIdentifier": account.get_id(), "ObjectType": "Group"})
 
     def to_json(self):
         return {"ObjectIdentifier": self.ipaNTSecurityIdentifier,

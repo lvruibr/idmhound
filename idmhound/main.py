@@ -23,13 +23,12 @@ def main():
 
     if args.legacy:
         domains, users, groups, computers, hbac = ldap.legacy_parse(data, args.domain, sid)
-        member_lookup(users+computers, groups)
+        member_lookup(users+computers+groups, groups)
         member_lookup(users+computers+groups, hbac)
         legacy_save(domains, users, groups, computers, hbac)
     else:
         domains, users, groups, computers, hbac, membership = ldap.parse(data, args.domain, sid)
         member_lookup(users+computers+groups, membership)
-
         member_lookup(users+computers+groups, hbac)
         with open("idmhound.json","w") as output:
             output.write(json.dumps(to_opengraph(domains+users+groups+computers, hbac+membership)))

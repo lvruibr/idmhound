@@ -27,7 +27,6 @@ def to_opengraph(nodes: list, edges: list) -> dict:
 def to_opengraph_hbac(data: list) -> dict:
     opengraph = []
     for entry in data:
-        print(entry.starts)
         opengraph.extend(entry.to_json())
     return {"graph": {"nodes": [],"edges": opengraph}}
 
