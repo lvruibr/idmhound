@@ -38,7 +38,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     :return: tuple of domains, users, groups, computers, hbac and membership."""
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac, membership = [], [], [], [], [], []
+    domains, users, groups, computers, hbac, sudoer, membership = [], [], [], [], [], [], []
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
@@ -46,7 +46,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
             realm_object = Domain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"], sid)
             domains.append(realm_object)
         elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn):
-            realm_object = User(dn, entry["cn"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
+            realm_object = User(dn, entry["uid"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
                                 entry["krbCanonicalName"], entry["krbPrincipalName"], entry["loginShell"],
                                 entry["sn"], entry["uid"], entry["uidNumber"], sid)
             users.append(realm_object)
@@ -66,16 +66,22 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
                 entry["ipaEnabledFlag"]) == "True":
             members, hosts, services, ipaid = parse_hbac(entry)
             hbac.append(HBAC(members, hosts, services, ipaid))
+        elif re.match(f"cn=.+,ou=sudoers{ldap_realm}", dn) and all(
+                attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "sudoUser", "sudoHost", "sudoRunAsUser"]):
+            members, hosts, commands, asusers, ipaid = parse_sudoer(entry)
+            sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
 
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
 
     logger.info(f"Found {len(domains)} domains.")
-    logger.info(f"Found {len(users)} domains.")
-    logger.info(f"Found {len(groups)} domains.")
-    logger.info(f"Found {len(computers)} domains.")
+    logger.info(f"Found {len(users)} users.")
+    logger.info(f"Found {len(groups)} groups.")
+    logger.info(f"Found {len(computers)} computer.")
+    logger.info(f"Found {len(hbac)} HBAC.")
+    logger.info(f"Found {len(sudoer)} sudoers")
 
-    return domains, users, groups, computers, hbac, membership
+    return domains, users, groups, computers, hbac, sudoer, membership
 
 
 def legacy_parse(raw, realm, sid) -> tuple:
@@ -128,9 +134,9 @@ def legacy_parse(raw, realm, sid) -> tuple:
             realm_object.set_desc(entry["description"])
 
     logger.info(f"Found {len(domains)} domains.")
-    logger.info(f"Found {len(users)} domains.")
-    logger.info(f"Found {len(groups)} domains.")
-    logger.info(f"Found {len(computers)} domains.")
+    logger.info(f"Found {len(users)} users.")
+    logger.info(f"Found {len(groups)} groups.")
+    logger.info(f"Found {len(computers)} computer.")
 
     return domains, users, groups, computers, hbac
 
@@ -154,6 +160,23 @@ def parse_hbac(entry: ldap3.abstract.entry.Entry) -> tuple:
         services = list(entry["memberService"])
 
     return members, hosts, services, entry["ipaUniqueID"]
+
+def parse_sudoer(entry: ldap3.abstract.entry.Entry) -> tuple:
+    """Parse sudoer rules LDAP entry.
+    :param entry: sudoer rules LDAP entry.
+    :return: members, hosts, commands, asusers and ID of sudoer rules."""
+
+    members = list(entry["sudoUser"])
+    hosts = list(entry["sudoHost"])
+    asusers = list(entry["sudoRunAsUser"])
+
+    if "sudoCommand" in entry.entry_attributes_as_dict.keys():
+        commands = list(entry["sudoCommand"])
+    else:
+        commands = ["all"]
+
+    return members, hosts, commands, asusers, ""
+
 
 
 if __name__ == "__main__":

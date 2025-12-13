@@ -35,18 +35,19 @@ def main():
     logger.info("Parsing LDAP data...")
     if args.legacy:
         domains, users, groups, computers, hbac = ldap.legacy_parse(data, args.domain, sid)
-        member_lookup(users+computers+groups, groups)
-        member_lookup(users+computers+groups, hbac)
+        member_lookup(users + computers + groups, groups)
+        member_lookup(users + computers + groups, hbac)
         logger.info("Save output to legacy JSON file format.")
         legacy_save(domains, users, groups, computers, hbac)
     else:
-        domains, users, groups, computers, hbac, membership = ldap.parse(data, args.domain, sid)
-        member_lookup(users+computers+groups, membership)
-        member_lookup(users+computers+groups, hbac)
+        domains, users, groups, computers, hbac, sudoer, membership = ldap.parse(data, args.domain, sid)
+        member_lookup(users + computers + groups, membership)
+        member_lookup(users + computers + groups, hbac)
+        member_lookup(users + computers + groups, sudoer)
         now = datetime.now().strftime("%Y%m%d%H%M%S")
         logger.info(f"Save output to Opengraph file format: idmhound_{now}.json")
         with open(f"idmhound_{now}.json","w") as output:
-            output.write(json.dumps(to_opengraph(domains+users+groups+computers, hbac+membership)))
+            output.write(json.dumps(to_opengraph(domains+users+groups+computers, hbac+membership+sudoer)))
 
 
 
