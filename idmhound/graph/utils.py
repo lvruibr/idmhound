@@ -69,13 +69,14 @@ def identify_realm_sid(data: list, realm: str) -> str:
         raise ValueError("Cannot identify realm SID.")
 
 
-def legacy_save(domains, users, groups, computers, hbac):
+def legacy_save(domains, users, groups, computers, hbac, sudoer):
     """Save data in the legacy file format.
     :param domains: domains in legacy JSON format.
     :param users: users in legacy JSON format.
     :param groups: groups in legacy JSON format.
     :param computers: computers in legacy JSON format.
-    :param hbac: HBAC in Opengraph format."""
+    :param hbac: HBAC in Opengraph format.
+    :param sudoer: Sudoer in Opengraph format."""
 
     now = datetime.now().strftime("%Y%m%d%H%M%S")
     logger.info(f"Saved domains to legacy file format: domains_{now}.json")
@@ -83,6 +84,7 @@ def legacy_save(domains, users, groups, computers, hbac):
     logger.info(f"Saved groups to legacy file format: groups_{now}.json")
     logger.info(f"Saved computers to legacy file format: computers_{now}.json")
     logger.info(f"Saved HBAC to Opengraph file format: hbac_{now}.json")
+    logger.info(f"Saved sudoer to Opengraph file format: sudoer_{now}.json")
 
     with open(f"domains_{now}.json", "w") as output:
         output.write(json.dumps(to_json(domains, "domains")))
@@ -94,3 +96,5 @@ def legacy_save(domains, users, groups, computers, hbac):
         output.write(json.dumps(to_json(computers, "computers")))
     with open(f"hbac_{now}.json", "w") as output:
         output.write(json.dumps(to_opengraph_hbac(hbac)))
+    with open(f"sudoer_{now}.json", "w") as output:
+        output.write(json.dumps(to_opengraph_hbac(sudoer)))

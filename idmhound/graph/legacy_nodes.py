@@ -15,6 +15,9 @@ class LegacyNode():
     def get_dn(self):
         return self.dn
 
+    def get_cn(self):
+        return self.cn
+
     def get_id(self):
         return self.ipaNTSecurityIdentifier
 

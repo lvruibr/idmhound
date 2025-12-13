@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "idmhound"
-version = "0.2.0"
+version = "0.3.0"
 description = "Bloodhound ingestor for FreeIPA/Red Hat IdM realms."
 authors = [{name="Lvruibr", email="lvruibr@protonmail.ch"}]
 license = "MIT"

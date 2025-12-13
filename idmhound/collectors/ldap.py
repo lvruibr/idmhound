@@ -92,7 +92,7 @@ def legacy_parse(raw, realm, sid) -> tuple:
     :return: tuple of domains, users, groups, computers, hbac and membership."""
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac = [], [], [], [], []
+    domains, users, groups, computers, hbac, sudoer = [], [], [], [], [], []
     num_objects = len(raw) + 1000
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
@@ -102,7 +102,7 @@ def legacy_parse(raw, realm, sid) -> tuple:
                                         entry["ipaNTSecurityIdentifier"], sid)
             domains.append(realm_object)
         elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn):
-            realm_object = LegacyUser(dn, entry["cn"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
+            realm_object = LegacyUser(dn, entry["uid"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
                                       entry["ipaNTSecurityIdentifier"], entry["krbCanonicalName"],
                                       entry["krbPrincipalName"],
                                       entry["loginShell"], entry["sn"], entry["uid"], entry["uidNumber"], sid)
@@ -129,6 +129,10 @@ def legacy_parse(raw, realm, sid) -> tuple:
                 entry["ipaEnabledFlag"]) == "True":
             members, hosts, services, ipaid = parse_hbac(entry)
             hbac.append(HBAC(members, hosts, services, ipaid))
+        elif re.match(f"cn=.+,ou=sudoers{ldap_realm}", dn) and all(
+                attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "sudoUser", "sudoHost", "sudoRunAsUser"]):
+            members, hosts, commands, asusers, ipaid = parse_sudoer(entry)
+            sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
 
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
@@ -138,7 +142,7 @@ def legacy_parse(raw, realm, sid) -> tuple:
     logger.info(f"Found {len(groups)} groups.")
     logger.info(f"Found {len(computers)} computer.")
 
-    return domains, users, groups, computers, hbac
+    return domains, users, groups, computers, hbac, sudoer
 
 
 def parse_hbac(entry: ldap3.abstract.entry.Entry) -> tuple:

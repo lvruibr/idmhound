@@ -45,6 +45,14 @@ RETURN p
 LIMIT 1000
 ```
 
+*List users and groups with sudoer rights*
+```
+MATCH p=(s)-[e]->(t)
+WHERE type(e) CONTAINS 'Sudoer'
+RETURN p
+LIMIT 1000
+```
+
 ## Limitations
 
 * Search and pathfindings are not yet supported by Bloodhound when parsing files in the Opengraph format.

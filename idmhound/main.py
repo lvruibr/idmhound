@@ -34,11 +34,12 @@ def main():
 
     logger.info("Parsing LDAP data...")
     if args.legacy:
-        domains, users, groups, computers, hbac = ldap.legacy_parse(data, args.domain, sid)
+        domains, users, groups, computers, hbac, sudoer = ldap.legacy_parse(data, args.domain, sid)
         member_lookup(users + computers + groups, groups)
         member_lookup(users + computers + groups, hbac)
+        member_lookup(users + computers + groups, sudoer)
         logger.info("Save output to legacy JSON file format.")
-        legacy_save(domains, users, groups, computers, hbac)
+        legacy_save(domains, users, groups, computers, hbac, sudoer)
     else:
         domains, users, groups, computers, hbac, sudoer, membership = ldap.parse(data, args.domain, sid)
         member_lookup(users + computers + groups, membership)
