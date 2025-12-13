@@ -38,7 +38,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     :return: tuple of domains, users, groups, computers, hbac and membership."""
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac, sudoer, membership = [], [], [], [], [], [], []
+    domains, users, groups, computers, hbac, sudoer, membership, spns = [], [], [], [], [], [], [], []
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
@@ -70,14 +70,20 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
                 attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "sudoUser", "sudoHost", "sudoRunAsUser"]):
             members, hosts, commands, asusers, ipaid = parse_sudoer(entry)
             sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
-
+        elif re.match(f"krbprincipalname=.+,cn=services,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["krbPrincipalName", "managedBy"]):
+            spns.append((entry["krbPrincipalName"], entry["managedBy"]))
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
+
+    for spn in spns:
+        for computer in computers:
+            if spn[1] == computer.get_dn():
+                computer.set_spn(spn[0])
 
     logger.info(f"Found {len(domains)} domains.")
     logger.info(f"Found {len(users)} users.")
     logger.info(f"Found {len(groups)} groups.")
-    logger.info(f"Found {len(computers)} computer.")
+    logger.info(f"Found {len(computers)} computer with {len(spns)} services.")
     logger.info(f"Found {len(hbac)} HBAC.")
     logger.info(f"Found {len(sudoer)} sudoers")
 
@@ -92,7 +98,7 @@ def legacy_parse(raw, realm, sid) -> tuple:
     :return: tuple of domains, users, groups, computers, hbac and membership."""
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac, sudoer = [], [], [], [], [], []
+    domains, users, groups, computers, hbac, sudoer, spns = [], [], [], [], [], [], []
     num_objects = len(raw) + 1000
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
@@ -133,9 +139,16 @@ def legacy_parse(raw, realm, sid) -> tuple:
                 attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "sudoUser", "sudoHost", "sudoRunAsUser"]):
             members, hosts, commands, asusers, ipaid = parse_sudoer(entry)
             sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
+        elif re.match(f"krbprincipalname=.+,cn=services,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["krbPrincipalName", "managedBy"]):
+            spns.append((entry["krbPrincipalName"], entry["managedBy"]))
 
         if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
             realm_object.set_desc(entry["description"])
+
+    for spn in spns:
+        for computer in computers:
+            if spn[1] == computer.get_dn():
+                computer.set_spn(spn[0])
 
     logger.info(f"Found {len(domains)} domains.")
     logger.info(f"Found {len(users)} users.")

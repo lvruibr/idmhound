@@ -11,7 +11,7 @@ from datetime import datetime
 
 def main():
 
-    parser = argparse.ArgumentParser(add_help=True, description="Bloodhound ingestor for FreeIPA/Red Hat IdM environment.")
+    parser = argparse.ArgumentParser(add_help=True, description="Bloodhound collector for FreeIPA/Red Hat IdM environment.")
     parser.add_argument("-d", "--domain", action="store", required=True, help="Domain / realm to query.")
     parser.add_argument("-u", "--username", action="store", required=True, help="Username to query the realm.")
     parser.add_argument("-p", "--password", action="store", required=True, help="Password of the account to query the realm.")
@@ -47,6 +47,7 @@ def main():
         member_lookup(users + computers + groups, sudoer)
         now = datetime.now().strftime("%Y%m%d%H%M%S")
         logger.info(f"Save output to Opengraph file format: idmhound_{now}.json")
+
         with open(f"idmhound_{now}.json","w") as output:
             output.write(json.dumps(to_opengraph(domains+users+groups+computers, hbac+membership+sudoer)))
 

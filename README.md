@@ -1,6 +1,6 @@
 # IDMHound
 
-IDMHound is a [BloodHound](https://bloodhound.specterops.io/) ingestor for FreeIPA and Red Hat Identity Management environments.
+IDMHound is a [BloodHound](https://bloodhound.specterops.io/) collector for FreeIPA and Red Hat Identity Management environments.
 
 It collects users, groups, domains, computers and HBAC relationships and can export them in Opengraph format or in the legacy Bloodhound file format.
 
@@ -51,6 +51,14 @@ MATCH p=(s)-[e]->(t)
 WHERE type(e) CONTAINS 'Sudoer'
 RETURN p
 LIMIT 1000
+```
+
+*List Kerberoastable accounts*
+```
+MATCH (u)
+WHERE u.hasspn=true
+RETURN u
+LIMIT 100
 ```
 
 ## Limitations

@@ -74,11 +74,17 @@ class Computer(Node):
         self.krbCanonicalName = str(krbCanonicalName)
         self.krbPrincipalName = str(krbPrincipalName)
         self.fqdn = str(fqdn)
+        self.spn = []
+        self.hasspn = False
 
     def to_json(self):
         return {"id": self.ipaUniqueID,
-                "properties": {"distinguishedname": self.dn, "name": self.fqdn, "description": self.desc,"domainsid":self.domainsid},
+                "properties": {"distinguishedname": self.dn, "name": self.fqdn, "description": self.desc,"domainsid":self.domainsid, "hasspn": self.hasspn, "Service krbprincipalname": "\n".join(self.spn)},
                 "kinds": ["Computer"]}
+
+    def set_spn(self, spn):
+        self.hasspn = True
+        self.spn.append(str(spn))
 
 
 class Group(Node):

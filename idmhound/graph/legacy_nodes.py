@@ -75,12 +75,17 @@ class LegacyComputer(LegacyNode):
         self.krbCanonicalName = str(krbCanonicalName)
         self.krbPrincipalName = str(krbPrincipalName)
         self.fqdn = str(fqdn)
+        self.spn = []
+        self.hasspn = False
 
     def to_json(self):
         return {"ObjectIdentifier": self.ipaNTSecurityIdentifier,
-                "Properties": {"distinguishedname": self.dn, "name": self.fqdn, "description": self.desc,"domainsid":self.domainsid},
+                "Properties": {"distinguishedname": self.dn, "name": self.fqdn, "description": self.desc,"domainsid":self.domainsid, "hasspn": self.hasspn, "serviceprincipalnames": "\n".join(self.spn)},
                 "Aces": self.acl}
 
+    def set_spn(self, spn):
+        self.hasspn = True
+        self.spn.append(str(spn))
 
 class LegacyGroup(LegacyNode):
     """Represent a group."""
