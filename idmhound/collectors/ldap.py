@@ -72,8 +72,13 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
             sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
         elif re.match(f"krbprincipalname=.+,cn=services,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["krbPrincipalName", "managedBy"]):
             spns.append((entry["krbPrincipalName"], entry["managedBy"]))
-        if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
-            realm_object.set_desc(entry["description"])
+
+        if realm_object is not None:
+            if "description" in entry.entry_attributes_as_dict.keys():
+                realm_object.set_desc(entry["description"])
+            if all(attr not in entry.entry_attributes_as_dict.keys() for attr in ["krbLastPwdChange", "krbPasswordExpiration"]):
+                realm_object.enabled = False
+
 
     for spn in spns:
         for computer in computers:
@@ -142,8 +147,12 @@ def legacy_parse(raw, realm, sid) -> tuple:
         elif re.match(f"krbprincipalname=.+,cn=services,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["krbPrincipalName", "managedBy"]):
             spns.append((entry["krbPrincipalName"], entry["managedBy"]))
 
-        if realm_object is not None and "description" in entry.entry_attributes_as_dict.keys():
-            realm_object.set_desc(entry["description"])
+        if realm_object is not None:
+            if "description" in entry.entry_attributes_as_dict.keys():
+                realm_object.set_desc(entry["description"])
+            if all(attr not in entry.entry_attributes_as_dict.keys() for attr in ["krbLastPwdChange", "krbPasswordExpiration"]):
+                realm_object.enabled = False
+
 
     for spn in spns:
         for computer in computers:

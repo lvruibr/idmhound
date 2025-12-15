@@ -47,7 +47,13 @@ class Domain(Node):
         """Convert a domain as a dictionary (JSON) representation.
         :return: edges as a list of dictionary."""
 
-        return {"id": self.ipaUniqueID, "Properties": {"name": self.ipaNTFlatName, "domain": self.cn, "domainsid": self.domainsid, "distinguishedname": self.dn, "highvalue":True, "description":self.desc, "system_tags":"test1", "user_tags":"test1"},
+        return {"id": self.ipaUniqueID, "Properties": {"name": self.ipaNTFlatName,
+                                                       "domain": self.cn,
+                                                       "domainsid": self.domainsid,
+                                                       "distinguishedname": self.dn,
+                                                       "highvalue":True,
+                                                       "description":self.desc
+                                                       },
                 "kinds": ["Domain"]}
 
 
@@ -67,16 +73,25 @@ class User(Node):
         self.sn = str(sn)
         self.uid = str(uid)
         self.uidNumber = str(uidNumber)
+        self.enabled = True
+
 
     def to_json(self) -> dict:
         """Convert a user as a dictionary (JSON) representation.
         :return: edges as a list of dictionary."""
 
         return {"id": self.ipaUniqueID,
-                "properties": {"name": self.krbCanonicalName, "distinguishedname": self.dn, "cn": self.cn, "domainsid":self.domainsid,
+                "properties": {"name": self.krbCanonicalName,
+                               "distinguishedname": self.dn,
+                               "cn": self.cn,
+                               "domainsid":self.domainsid,
                                "gecos": self.gecos,
+                               "enabled": self.enabled,
                                "homedirectory": self.homeDirectory,
-                               "sn": self.sn, "uid": self.uid, "uidNumber": self.uidNumber, "description": self.desc},
+                               "sn": self.sn,
+                               "uid": self.uid,
+                               "uidNumber": self.uidNumber,
+                               "description": self.desc},
                 "kinds": ["User"]}
 
 
@@ -99,7 +114,12 @@ class Computer(Node):
         :return: edges as a list of dictionary."""
 
         return {"id": self.ipaUniqueID,
-                "properties": {"distinguishedname": self.dn, "name": self.fqdn, "description": self.desc,"domainsid":self.domainsid, "hasspn": self.hasspn, "Service krbprincipalname": "\n".join(self.spn)},
+                "properties": {"distinguishedname": self.dn,
+                               "name": self.fqdn,
+                               "description": self.desc,
+                               "domainsid": self.domainsid,
+                               "hasspn": self.hasspn,
+                               "service krbprincipalname": "\n".join(self.spn)},
                 "kinds": ["Computer"]}
 
     def set_spn(self, spn: str):
@@ -134,7 +154,10 @@ class Group(Node):
         :return: edges as a list of dictionary."""
 
         return {"id": self.ipaUniqueID,
-                "Properties": {"distinguishedname": self.dn, "name": self.cn, "description": self.desc,"domainsid":self.domainsid},
+                "Properties": {"distinguishedname": self.dn,
+                               "name": self.cn,
+                               "description": self.desc,
+                               "domainsid": self.domainsid},
                 "kinds": ["Group"]}
 
 

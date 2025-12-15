@@ -12,6 +12,7 @@ class LegacyNode():
         self.acl = []
         self.domainsid = str(domainsid)
 
+
     def get_dn(self) -> str:
         """Returns the DN of the node.
         :return: DN of the node."""
@@ -49,7 +50,13 @@ class LegacyDomain(LegacyNode):
         """Convert a domain as a dictionary (JSON) representation.
         :return: edges as a list of dictionary."""
 
-        return {"ObjectIdentifier": self.ipaNTSecurityIdentifier, "Properties": {"name": self.ipaNTFlatName, "domain": self.cn, "domainsid": self.domainsid, "distinguishedname": self.dn, "highvalue":True, "description":self.desc},
+        return {"ObjectIdentifier": self.ipaNTSecurityIdentifier,
+                "Properties": {"name": self.ipaNTFlatName,
+                               "domain": self.cn,
+                               "domainsid": self.domainsid,
+                               "distinguishedname": self.dn,
+                               "highvalue":True,
+                               "description":self.desc},
                 "Aces": self.acl}
 
 
@@ -69,16 +76,24 @@ class LegacyUser(LegacyNode):
         self.sn = str(sn)
         self.uid = str(uid)
         self.uidNumber = str(uidNumber)
+        self.enabled = True
 
     def to_json(self) -> dict:
         """Convert a user as a dictionary (JSON) representation.
         :return: edges as a list of dictionary."""
 
         return {"ObjectIdentifier": self.ipaNTSecurityIdentifier,
-                "Properties": {"name": self.krbCanonicalName, "distinguishedname": self.dn, "cn": self.cn, "domainsid":self.domainsid,
+                "Properties": {"name": self.krbCanonicalName,
+                               "distinguishedname": self.dn,
+                               "cn": self.cn,
+                               "domainsid":self.domainsid,
                                "gecos": self.gecos,
+                               "enabled": self.enabled,
                                "homedirectory": self.homeDirectory,
-                               "sn": self.sn, "uid": self.uid, "uidNumber": self.uidNumber, "description": self.desc},
+                               "sn": self.sn,
+                               "uid": self.uid,
+                               "uidNumber": self.uidNumber,
+                               "description": self.desc},
                 "Aces": self.acl}
 
 
@@ -100,7 +115,12 @@ class LegacyComputer(LegacyNode):
         :return: edges as a list of dictionary."""
 
         return {"ObjectIdentifier": self.ipaNTSecurityIdentifier,
-                "Properties": {"distinguishedname": self.dn, "name": self.fqdn, "description": self.desc,"domainsid":self.domainsid, "hasspn": self.hasspn, "serviceprincipalnames": "\n".join(self.spn)},
+                "Properties": {"distinguishedname": self.dn,
+                               "name": self.fqdn,
+                               "description": self.desc,
+                               "domainsid": self.domainsid,
+                               "hasspn": self.hasspn,
+                               "serviceprincipalnames": "\n".join(self.spn)},
                 "Aces": self.acl}
 
     def set_spn(self, spn):
@@ -120,7 +140,7 @@ class LegacyGroup(LegacyNode):
         self.member_dn = list(member)
         self.member = []
 
-    def resolve_member_dn(self, accounts: list[Node]):
+    def resolve_member_dn(self, accounts: list[LegacyNode]):
         """Build the list of members ipaUniqueID based on the DN of the nodes.
         :param accounts: list of accounts to use to convert the DN to ipaUniqueID."""
 
@@ -137,7 +157,10 @@ class LegacyGroup(LegacyNode):
         :return: edges as a list of dictionary."""
 
         return {"ObjectIdentifier": self.ipaNTSecurityIdentifier,
-                "Properties": {"distinguishedname": self.dn, "name": self.cn, "description": self.desc,"domainsid":self.domainsid},
+                "Properties": {"distinguishedname": self.dn,
+                               "name": self.cn,
+                               "description": self.desc,
+                               "domainsid":self.domainsid},
                 "Members": self.member,
                 "Aces": self.acl}
 
