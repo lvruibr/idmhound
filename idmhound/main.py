@@ -32,14 +32,13 @@ def main():
     sid = identify_realm_sid(data, args.domain)
     logger.info(f"Realm SID: {sid}")
 
-    print(data)
-
     logger.info("Parsing LDAP data...")
     if args.legacy:
-        domains, users, groups, computers, hbac, sudoer = ldap.legacy_parse(data, args.domain, sid)
+        domains, users, groups, computers, hbac, sudoer, hbacservicesgroups, hbacservices = ldap.legacy_parse(data, args.domain, sid)
         member_lookup(users + computers + groups, groups)
-        member_lookup(users + computers + groups, hbac)
         member_lookup(users + computers + groups, sudoer)
+        member_lookup(hbacservices, hbacservicesgroups)
+        member_lookup(users + computers + groups +hbacservices + hbacservicesgroups, hbac)
         logger.info("Save output to legacy JSON file format.")
         legacy_save(domains, users, groups, computers, hbac, sudoer)
     else:

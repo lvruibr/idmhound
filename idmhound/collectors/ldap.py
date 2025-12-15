@@ -106,7 +106,7 @@ def legacy_parse(raw, realm, sid) -> tuple:
     :return: tuple of domains, users, groups, computers, hbac and membership."""
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac, sudoer, spns = [], [], [], [], [], [], []
+    domains, users, groups, computers, hbac, sudoer, spns, hbacservicesgroups, hbacservices = [], [], [], [], [], [], [], [], []
     num_objects = len(raw) + 1000
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
@@ -149,6 +149,10 @@ def legacy_parse(raw, realm, sid) -> tuple:
             sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
         elif re.match(f"krbprincipalname=.+,cn=services,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["krbPrincipalName", "managedBy"]):
             spns.append((entry["krbPrincipalName"], entry["managedBy"]))
+        elif re.match(f"cn=.+,cn=hbacservicegroups,cn=hbac{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "member"]):
+            hbacservicesgroups.append(HBACServicesGroup(dn, entry["cn"], entry["ipaUniqueID"], entry["member"], sid))
+        elif re.match(f"cn=.+,cn=hbacservices,cn=hbac{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID"]):
+            hbacservices.append(HBACService(dn, entry["cn"], entry["ipaUniqueID"], sid))
 
         if realm_object is not None:
             if "description" in entry.entry_attributes_as_dict.keys():
@@ -167,7 +171,7 @@ def legacy_parse(raw, realm, sid) -> tuple:
     logger.info(f"Found {len(groups)} groups.")
     logger.info(f"Found {len(computers)} computer.")
 
-    return domains, users, groups, computers, hbac, sudoer
+    return domains, users, groups, computers, hbac, sudoer, hbacservicesgroups, hbacservices
 
 
 def parse_hbac(entry: ldap3.abstract.entry.Entry) -> tuple:
