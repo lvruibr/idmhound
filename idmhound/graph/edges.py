@@ -7,7 +7,7 @@ from idmhound.graph.nodes import *
 class Edges():
     """Represent an edge or a group of edges, abstract class."""
 
-    def __init__(self, starts: list, ends: list, kinds: list, ipaUniqueID):
+    def __init__(self, starts: list[str], ends: list[str], kinds: list[str], ipaUniqueID: str):
         self.ipaUniqueID = str(ipaUniqueID)
         self.starts_dn = [str(start) for start in starts]
         self.ends_dn = [str(end) for end in ends]
@@ -16,10 +16,15 @@ class Edges():
         self.ends = []
         self.starts = []
 
-    def set_desc(self, desc):
+    def set_desc(self, desc: str):
+        """Set the description attribute of the edge.
+        :param desc: description to set."""
+
         self.desc = str(desc)
 
-    def resolve_member_dn(self, accounts: list):
+    def resolve_member_dn(self, accounts: list[Node]):
+        """Build the list of start and end nodes ipaUniqueID based on the DN of the nodes.
+        :param accounts: list of accounts to use to convert the DN to ipaUniqueID."""
 
         for account in accounts:
             if account.get_dn() in self.ends_dn or (
@@ -31,16 +36,18 @@ class Edges():
 
 
 class HBAC(Edges):
-    """Represent a Host-Based Access Control."""
+    """Represent a Host-Based Access Control entry."""
 
-    def __init__(self, starts: list, ends: list, services: list, ipaUniqueID):
+    def __init__(self, starts: list[str], ends: list[str], services: list[str], ipaUniqueID: str):
 
         if "all" not in services:
             services = [re.findall("cn=(.+),cn=hbacservices,cn=hbac,.+", service)[0].replace("-", "_") for service in
                         services]
         super().__init__(starts, ends, services, ipaUniqueID)
 
-    def to_json(self):
+    def to_json(self) -> list:
+        """Convert an HBAC entry to a list of edges as a dictionary (JSON) representation.
+        :return: edges as a list of dictionary."""
 
         edges = []
         for kind in self.kinds:
@@ -52,9 +59,9 @@ class HBAC(Edges):
 
 
 class Sudoer(Edges):
-    """Represent sudoer rights."""
+    """Represent a sudoer rights entry."""
 
-    def __init__(self, starts: list, ends: list, commands: list, asusers: list, ipaUniqueID):
+    def __init__(self, starts: list[str], ends: list[str], commands: list[str], asusers: list[str], ipaUniqueID: str):
 
         starts = [start.replace("%","") for start in starts]
         ends = [end.replace("+","") for end in ends]
@@ -65,18 +72,21 @@ class Sudoer(Edges):
 
 
     def resolve_member_dn(self, accounts: list):
+        """Build the list of start and end nodes ipaUniqueID based on the DN of the nodes.
+        :param accounts: list of accounts to use to convert the DN to ipaUniqueID."""
 
         for account in accounts:
             if account.get_cn() in self.ends_dn or (
                     "all" in self.ends_dn and isinstance(account, (LegacyComputer, Computer))):
                 self.ends.append(account.get_id())
-
             if account.get_cn() in self.starts_dn or (
                     "all" in self.starts_dn and isinstance(account, (LegacyUser, User))):
                 self.starts.append(account.get_id())
 
 
-    def to_json(self):
+    def to_json(self) -> list:
+        """Convert a sudoer entry to a list of edges as a dictionary (JSON) representation.
+        :return: edges as a list of dictionary."""
 
         edges = []
         for kind in self.kinds:
@@ -88,13 +98,15 @@ class Sudoer(Edges):
         return edges
 
 class Membership(Edges):
-    """Represent a membership to a group."""
+    """Represent a membership in a group entry."""
 
-    def __init__(self, starts: list, ends: list):
+    def __init__(self, starts: list[str], ends: list[str]):
 
         super().__init__(starts, ends, ["MemberOf"], None)
 
-    def to_json(self):
+    def to_json(self) -> list:
+        """Convert a membership entry to a list of edges as a dictionary (JSON) representation.
+        :return: edges as a list of dictionary."""
 
         edges = []
         for start in self.starts:
