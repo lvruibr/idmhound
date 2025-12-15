@@ -40,9 +40,6 @@ class HBAC(Edges):
 
     def __init__(self, starts: list[str], ends: list[str], services: list[str], ipaUniqueID: str):
 
-        if "all" not in services:
-            services = [re.findall("cn=(.+),cn=hbacservices,cn=hbac,.+", service)[0].replace("-", "_") for service in
-                        services]
         super().__init__(starts, ends, services, ipaUniqueID)
 
     def to_json(self) -> list:
@@ -57,6 +54,25 @@ class HBAC(Edges):
                                   "end": {"value": end, "match_by": "id"}})
         return edges
 
+    def resolve_member_dn(self, accounts: list[Node]):
+        """Build the list of start and end nodes ipaUniqueID based on the DN of the nodes.
+        :param accounts: list of accounts to use to convert the DN to ipaUniqueID."""
+
+        services = []
+        for account in accounts:
+            if account.get_dn() in self.ends_dn or (
+                    "all" in self.ends_dn and isinstance(account, (LegacyComputer, Computer))):
+                self.ends.append(account.get_id())
+            if account.get_dn() in self.starts_dn or (
+                    "all" in self.starts_dn and isinstance(account, (LegacyUser, User))):
+                self.starts.append(account.get_id())
+            if account.get_dn() in self.kinds and not "all" in self.kinds:
+                if isinstance(account, HBACService):
+                    services.append(account.get_cn())
+                elif isinstance(account, HBACServicesGroup):
+                    services.extend(account.member)
+        if not "all" in self.kinds:
+            self.kinds = services
 
 class Sudoer(Edges):
     """Represent a sudoer rights entry."""

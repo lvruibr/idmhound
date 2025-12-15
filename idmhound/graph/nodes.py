@@ -8,7 +8,6 @@ class Node():
         self.cn = str(cn)
         self.ipaUniqueID = str(ipaUniqueID)
         self.desc = ""
-        self.acl = []
         self.domainsid = str(domainsid)
 
     def get_dn(self) -> str:
@@ -160,6 +159,31 @@ class Group(Node):
                                "domainsid": self.domainsid},
                 "kinds": ["Group"]}
 
+class HBACService(Node):
+    """Represents an HBACService."""
+
+    def __init__(self, dn: str, cn: str, ipaUniqueID:str, domainsid:str):
+
+        cn = str(cn).replace("-", "")
+        super().__init__(dn, cn, ipaUniqueID, domainsid)
+
+class HBACServicesGroup(Node):
+    """Represents an HBACServicesGroup."""
+
+    def __init__(self, dn: str, cn: str, ipaUniqueID: str, member: list, domainsid: str):
+
+        super().__init__(dn, cn, ipaUniqueID, domainsid)
+
+        self.member_dn = list(member)
+        self.member = []
+
+    def resolve_member_dn(self, accounts: list[Node]):
+        """Build the list of members ipaUniqueID based on the DN of the nodes.
+        :param accounts: list of accounts to use to convert the DN to ipaUniqueID."""
+
+        for account in accounts:
+            if isinstance(account, (HBACService)) and account.get_dn() in self.member_dn:
+                self.member.append(account.get_cn())
 
 if __name__ == "__main__":
     pass

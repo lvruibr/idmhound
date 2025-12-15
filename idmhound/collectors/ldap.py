@@ -38,7 +38,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     :return: tuple of domains, users, groups, computers, hbac and membership."""
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac, sudoer, membership, spns = [], [], [], [], [], [], [], []
+    domains, users, groups, computers, hbac, sudoer, membership, spns, hbacservicesgroups, hbacservices = [], [], [], [], [], [], [], [], [], []
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
@@ -58,9 +58,8 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
         elif re.match(f"fqdn=.+,cn=computers,cn=accounts{ldap_realm}", dn) and all(
                 attr in entry.entry_attributes_as_dict.keys() for attr in
                 ["cn", "ipaUniqueID", "krbCanonicalName", "krbPrincipalName", "fqdn"]):
-            realm_object = Computer(dn, entry["cn"], entry["ipaUniqueID"], entry["krbCanonicalName"],
-                                    entry["krbPrincipalName"], entry["fqdn"], sid)
-            computers.append(realm_object)
+            computers.append(Computer(dn, entry["cn"], entry["ipaUniqueID"], entry["krbCanonicalName"],
+                                    entry["krbPrincipalName"], entry["fqdn"], sid))
         elif re.match(f"ipaUniqueID=.+,cn=hbac{ldap_realm}", dn) and all(
                 attr in entry.entry_attributes_as_dict.keys() for attr in ["ipaUniqueID", "ipaEnabledFlag"]) and str(
                 entry["ipaEnabledFlag"]) == "True":
@@ -72,6 +71,10 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
             sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
         elif re.match(f"krbprincipalname=.+,cn=services,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["krbPrincipalName", "managedBy"]):
             spns.append((entry["krbPrincipalName"], entry["managedBy"]))
+        elif re.match(f"cn=.+,cn=hbacservicegroups,cn=hbac{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "member"]):
+            hbacservicesgroups.append(HBACServicesGroup(dn, entry["cn"], entry["ipaUniqueID"], entry["member"], sid))
+        elif re.match(f"cn=.+,cn=hbacservices,cn=hbac{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID"]):
+            hbacservices.append(HBACService(dn, entry["cn"], entry["ipaUniqueID"], sid))
 
         if realm_object is not None:
             if "description" in entry.entry_attributes_as_dict.keys():
@@ -92,7 +95,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     logger.info(f"Found {len(hbac)} HBAC.")
     logger.info(f"Found {len(sudoer)} sudoers")
 
-    return domains, users, groups, computers, hbac, sudoer, membership
+    return domains, users, groups, computers, hbac, sudoer, membership, hbacservicesgroups, hbacservices
 
 
 def legacy_parse(raw, realm, sid) -> tuple:
