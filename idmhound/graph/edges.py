@@ -79,25 +79,36 @@ class Sudoer(Edges):
 
     def __init__(self, starts: list[str], ends: list[str], commands: list[str], asusers: list[str], ipaUniqueID: str):
 
-        starts = [start.replace("%","") for start in starts]
-        ends = [end.replace("+","") for end in ends]
-        commands = [command.replace("-", "") for command in commands]
-
         super().__init__(starts, ends, commands, ipaUniqueID)
-        self.asusers = asusers
+        self.asusers_dn = asusers
+        self.asusers = []
 
 
     def resolve_member_dn(self, accounts: list):
         """Build the list of start and end nodes ipaUniqueID based on the DN of the nodes.
         :param accounts: list of accounts to use to convert the DN to ipaUniqueID."""
 
+        services = []
         for account in accounts:
-            if account.get_cn() in self.ends_dn or (
+            if account.get_dn() in self.ends_dn or (
                     "all" in self.ends_dn and isinstance(account, (LegacyComputer, Computer))):
                 self.ends.append(account.get_id())
-            if account.get_cn() in self.starts_dn or (
+            if account.get_dn() in self.starts_dn or (
                     "all" in self.starts_dn and isinstance(account, (LegacyUser, User))):
                 self.starts.append(account.get_id())
+            if account.get_dn() in self.kinds and not "all" in self.kinds:
+                if isinstance(account, SudoCmd):
+                    services.append(account.get_cn())
+                elif isinstance(account, SudoCmdGroup):
+                    services.extend(account.member)
+            if account.get_dn() in self.asusers_dn and isinstance(account, (LegacyUser, User, LegacyGroup, Group)) and not "all" in self.asusers:
+                self.asusers.append(account.get_cn())
+
+
+        if "all" in self.asusers_dn:
+            self.asusers = self.asusers_dn
+        if not "all" in self.kinds:
+            self.kinds = services
 
 
     def to_json(self) -> list:

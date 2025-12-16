@@ -185,5 +185,29 @@ class HBACServicesGroup(Node):
             if isinstance(account, (HBACService)) and account.get_dn() in self.member_dn:
                 self.member.append(account.get_cn())
 
+class SudoCmd(Node):
+    """Represents an SudoCmd."""
+
+    def __init__(self, dn: str, cn: str, ipaUniqueID:str, domainsid:str):
+
+        cn = str(cn).replace("-", "")
+        super().__init__(dn, cn, ipaUniqueID, domainsid)
+class SudoCmdGroup(Node):
+    """Represent a group of sudo commands."""
+
+    def __init__(self, dn: str, cn:str, ipaUniqueID: str, member: list, domainsid: str):
+
+        super().__init__(dn, cn, ipaUniqueID, domainsid)
+        self.member_dn = list(member)
+        self.member = []
+
+    def resolve_member_dn(self, accounts: list[Node]):
+        """Build the list of members ipaUniqueID based on the DN of the nodes.
+        :param accounts: list of accounts to use to convert the DN to ipaUniqueID."""
+
+        for account in accounts:
+            if isinstance(account, (SudoCmd)) and account.get_dn() in self.member_dn:
+                self.member.append(account.get_cn())
+
 if __name__ == "__main__":
     pass

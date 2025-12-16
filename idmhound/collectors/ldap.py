@@ -38,7 +38,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     :return: tuple of domains, users, groups, computers, hbac and membership."""
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
-    domains, users, groups, computers, hbac, sudoer, membership, spns, hbacservicesgroups, hbacservices = [], [], [], [], [], [], [], [], [], []
+    domains, users, groups, computers, hbac, sudoer, membership, spns, hbacservicesgroups, hbacservices, sudocmdgroups, sudocmds = [], [], [], [], [], [], [], [], [], [], [], []
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
@@ -65,8 +65,9 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
                 entry["ipaEnabledFlag"]) == "True":
             members, hosts, services, ipaid = parse_hbac(entry)
             hbac.append(HBAC(members, hosts, services, ipaid))
-        elif re.match(f"cn=.+,ou=sudoers{ldap_realm}", dn) and all(
-                attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "sudoUser", "sudoHost", "sudoRunAsUser"]):
+        elif re.match(f"ipaUniqueID=.+,cn=sudorules,cn=sudo{ldap_realm}", dn) and all(
+                attr in entry.entry_attributes_as_dict.keys() for attr in ["ipaUniqueID", "ipaEnabledFlag"]):
+            print(entry)
             members, hosts, commands, asusers, ipaid = parse_sudoer(entry)
             sudoer.append(Sudoer(members, hosts, commands, asusers, ipaid))
         elif re.match(f"krbprincipalname=.+,cn=services,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["krbPrincipalName", "managedBy"]):
@@ -75,6 +76,10 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
             hbacservicesgroups.append(HBACServicesGroup(dn, entry["cn"], entry["ipaUniqueID"], entry["member"], sid))
         elif re.match(f"cn=.+,cn=hbacservices,cn=hbac{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID"]):
             hbacservices.append(HBACService(dn, entry["cn"], entry["ipaUniqueID"], sid))
+        elif re.match(f"cn=docker,cn=sudocmdgroups,cn=sudo{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaUniqueID", "member"]):
+            sudocmdgroups.append(SudoCmdGroup(dn, entry["cn"], entry["ipaUniqueID"], entry["member"], sid))
+        elif re.match(f"ipaUniqueID=.+,cn=sudocmds,cn=sudo{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["sudoCmd", "ipaUniqueID"]):
+            sudocmds.append(SudoCmd(dn, entry["sudoCmd"], entry["ipaUniqueID"], sid))
 
         if realm_object is not None:
             if "description" in entry.entry_attributes_as_dict.keys():
@@ -95,7 +100,7 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     logger.info(f"Found {len(hbac)} HBAC.")
     logger.info(f"Found {len(sudoer)} sudoers")
 
-    return domains, users, groups, computers, hbac, sudoer, membership, hbacservicesgroups, hbacservices
+    return domains, users, groups, computers, hbac, sudoer, membership, hbacservicesgroups, hbacservices, sudocmdgroups, sudocmds
 
 
 def legacy_parse(raw, realm, sid) -> tuple:
@@ -199,14 +204,30 @@ def parse_sudoer(entry: ldap3.abstract.entry.Entry) -> tuple:
     :param entry: sudoer rules LDAP entry.
     :return: members, hosts, commands, asusers and ID of sudoer rules."""
 
-    members = list(entry["sudoUser"])
-    hosts = list(entry["sudoHost"])
-    asusers = list(entry["sudoRunAsUser"])
-
-    if "sudoCommand" in entry.entry_attributes_as_dict.keys():
-        commands = list(entry["sudoCommand"])
+    if "userCategory" in entry.entry_attributes_as_dict.keys():
+        members = list(entry["userCategory"])
+    elif "memberUser" in entry.entry_attributes_as_dict.keys():
+        members = list(entry["memberUser"])
     else:
-        commands = ["all"]
+        members = []
+    if "hostCategory" in entry.entry_attributes_as_dict.keys():
+        hosts = list(entry["hostCategory"])
+    elif "memberHost" in entry.entry_attributes_as_dict.keys():
+        hosts = list(entry["memberHost"])
+    else:
+        hosts = []
+    if "cmdCategory" in entry.entry_attributes_as_dict.keys():
+        commands = list(entry["cmdCategory"])
+    elif "memberAllowCmd" in entry.entry_attributes_as_dict.keys():
+        commands = list(entry["memberAllowCmd"])
+    else:
+        commands = []
+    if "ipaSudoRunAsUserCategory" in entry.entry_attributes_as_dict.keys():
+        asusers = list(entry["ipaSudoRunAsUserCategory"])
+    elif "ipaSudoRunAs" in entry.entry_attributes_as_dict.keys():
+        asusers = list(entry["ipaSudoRunAs"])
+    else:
+        asusers = []
 
     return members, hosts, commands, asusers, ""
 
