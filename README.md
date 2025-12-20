@@ -6,6 +6,8 @@ It collects users, groups, domains, computers and HBAC relationships and can exp
 
 Analysing of the relationship helps identifying privilege and lateral movements paths within the FreeIPA / Red Hat Identity Management realms.
 
+![IDMHound](https://lvruibr.github.io/images/idmhound/idmhound.png)
+
 ## Installation
 
 ```
@@ -47,7 +49,7 @@ LIMIT 1000
 
 *List users part of groups that can FTP*
 ```
-MATCH p=(s)-[e]->(t)
+MATCH p=(s:User)-[:MemberOf*0..]->(g)-[e]->(t)
 WHERE type(e) CONTAINS 'HBAC' AND type(e) CONTAINS 'ftp'
 RETURN p
 LIMIT 1000
@@ -95,5 +97,7 @@ LIMIT 1000
 
 ## Limitations
 
-* Search and pathfindings are not yet supported by Bloodhound when parsing files in the Opengraph format.
-* When using the legacy file format, upload first the users, groups, domains and computers JSON file. Only then, upload the remaining files to prevent duplicated nodes.
+* Search and pathfinding are not yet supported by BloodHound when parsing files in the Opengraph format[^1].
+* When using the legacy file format, upload first the users, groups, domains and computers JSON files. Only then, upload the remaining files to prevent duplicated nodes.
+
+[^1]: [https://bloodhound.specterops.io/opengraph/faq#do-custom-nodes-and-edges-work-with-search-and-pathfinding](https://bloodhound.specterops.io/opengraph/faq#do-custom-nodes-and-edges-work-with-search-and-pathfinding)
