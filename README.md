@@ -40,7 +40,23 @@ LIMIT 1000;
 
 *List users part of groups that can SSH*
 ```
-MATCH p=(:User)-[]-(:Group)-[:HBAC_sshd]->(:Group)
+MATCH p=(s:User)-[:MemberOf*0..]->(g)-[:HBAC_sshd]->(t)
+RETURN p
+LIMIT 1000
+```
+
+*List users part of groups that can FTP*
+```
+MATCH p=(s)-[e]->(t)
+WHERE type(e) CONTAINS 'HBAC' AND type(e) CONTAINS 'ftp'
+RETURN p
+LIMIT 1000
+```
+
+*List users part of groups that can RDP (Xrdp and GNOME RDP)*
+```
+MATCH p=(s)-[e]->(t)
+WHERE type(e) CONTAINS 'HBAC' AND type(e) IN ['xrdp', 'xrdp-sesman', 'gnome-remote-desktop']
 RETURN p
 LIMIT 1000
 ```
@@ -59,6 +75,22 @@ MATCH (u)
 WHERE u.hasspn=true
 RETURN u
 LIMIT 100
+```
+
+*List disabled accounts*
+```
+MATCH (s)
+WHERE s:User and s.enabled = FALSE
+RETURN s
+LIMIT 1000
+```
+
+*Shortest path to highly privileged groups (T0)*
+```
+MATCH p=shortestPath((t)-[*1..]->(s:Group))
+WHERE s.name IN ['ADMINS', 'TRUST ADMINS'] AND s<>t
+RETURN p
+LIMIT 1000
 ```
 
 ## Limitations
