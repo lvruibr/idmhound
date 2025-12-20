@@ -20,7 +20,10 @@ def collect(server: str, username: str, password: str, base: str) -> list:
     :return list: list of LDAP entries."""
 
     server = Server(server, get_info=ALL)
-    conn = Connection(server, user=username, password=password)
+    if username.split(",")[0] != "uid=" and password != "":
+        conn = Connection(server, user=username, password=password)
+    else:
+        conn = Connection(server)
     conn.bind()
 
     conn.search(search_base=base, search_filter="(objectClass=*)", search_scope=SUBTREE, attributes=["*"])
@@ -42,10 +45,10 @@ def parse(raw: list, realm: str, sid: str) -> tuple:
     for index, entry in enumerate(raw):
         dn = entry.entry_dn
         realm_object = None
-        if re.match(f"cn=.+,cn=ad,cn=etc{ldap_realm}", dn):
+        if re.match(f"cn=.+,cn=ad,cn=etc{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["cn", "ipaNTDomainGUID", "ipaNTFlatName"]):
             realm_object = Domain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"], sid)
             domains.append(realm_object)
-        elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn):
+        elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn) and all(attr in entry.entry_attributes_as_dict.keys() for attr in ["ipaUniqueID"]):
             realm_object = User(dn, entry["uid"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
                                 entry["krbCanonicalName"], entry["krbPrincipalName"], entry["loginShell"],
                                 entry["sn"], entry["uid"], entry["uidNumber"], sid)

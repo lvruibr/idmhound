@@ -13,8 +13,8 @@ def main():
 
     parser = argparse.ArgumentParser(add_help=True, description="Bloodhound collector for FreeIPA/Red Hat IdM environment.")
     parser.add_argument("-d", "--domain", action="store", required=True, help="Domain / realm to query.")
-    parser.add_argument("-u", "--username", action="store", required=True, help="Username to query the realm.")
-    parser.add_argument("-p", "--password", action="store", required=True, help="Password of the account to query the realm.")
+    parser.add_argument("-u", "--username", action="store", default="", help="Username to query the realm.")
+    parser.add_argument("-p", "--password", action="store", default="", help="Password of the account to query the realm.")
     parser.add_argument("-dc", "--domain-controller", action="store", required=True, help="Server to query.")
     parser.add_argument("-dn", "--base-dn", action="store", default="")
     parser.add_argument("-l", "--legacy", action="store_true", default=False)

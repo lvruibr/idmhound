@@ -62,8 +62,13 @@ def identify_realm_sid(data: list, realm: str) -> str:
 
     ldap_realm = "".join([",dc=" + dc for dc in realm.split(".")])
     for entry in data:
-        if re.match(f"cn={realm},cn=ad,cn=etc{ldap_realm}", entry.entry_dn):
+        if re.match(f"cn={realm},cn=ad,cn=etc{ldap_realm}", entry.entry_dn) and "ipaNTSecurityIdentifier" in entry.entry_attributes_as_dict.keys():
             sid = str(entry["ipaNTSecurityIdentifier"])
+            return sid
+        elif re.match(f"cn=Default SMB Group,cn=groups,cn=accounts{ldap_realm}", entry.entry_dn) and "ipaNTSecurityIdentifier" in entry.entry_attributes_as_dict.keys():
+            logger.warning(f"Cannot reliably identify the domain SID. An LDAP anonymous bind was likely used. Graphable data will be limited.")
+            sid = str(entry["ipaNTSecurityIdentifier"])
+            sid = "-".join(sid.split("-")[:-1])
             return sid
     else:
         raise ValueError("Cannot identify realm SID.")
