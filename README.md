@@ -10,7 +10,7 @@ Analysing of the relationship helps identifying privilege and lateral movements 
 
 ## Installation
 
-```
+```bash
 git clone https://github.com/lvruibr/idmhound
 cd idmhound
 pip install .
@@ -18,16 +18,38 @@ pip install .
 
 ## Usage
 
+**Output format**
+
 By default, the results are saved in a JSON file in the Opengraph format.
 
-```
+```bash 
 idmhound -dc <SERVER> -u <USERNAME> -p <PASSWORD> -d <REALM>
 ```
 
 Alternatively the legacy Bloodhound file format (or a mix of both) is also supported.
 
-```
+```bash
 idmhound -dc <SERVER> -u <USERNAME> -p <PASSWORD> -d <REALM> --legacy
+```
+
+**Authentication**
+
+Regarding authentication, plain text credentials (or an anonymous bind) will be used by default, but Kerberos is also supported.
+
+1. A valid TGT is required. For instance, running `klist` should return an output similar to the one below.
+
+```bash
+$ klist
+Ticket cache: FILE:/tmp/krb5cc_1000
+Default principal: lbal@LAB.LO
+
+Valid starting     Expires            Service principal
+01/02/26 16:25:59  01/03/26 15:26:02  krbtgt/LAB.LO@LAB.LO
+```
+
+2. The domain name of the LDAP server must be provided to IDMHound along with the Kerberos switch (`-k` or `--kerberos`).
+```bash
+idmhound -dc idm01.lab.lo -d lab.lo -k
 ```
 
 ## Example Cypher queries

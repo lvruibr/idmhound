@@ -7,20 +7,23 @@ from idmhound.graph.nodes import *
 from idmhound.graph.legacy_nodes import *
 from idmhound.graph.edges import *
 from idmhound.graph.utils import *
-from ldap3 import Server, Connection, ALL, SUBTREE
+from ldap3 import Server, Connection, ALL, SUBTREE, SASL, GSSAPI
 
 logger = logging.getLogger()
 
-def collect(server: str, username: str, password: str, base: str) -> list:
+def collect(server: str, base: str, username: str = "", password: str = "", krb_auth: bool = False) -> list:
     """Collect data by performing an LDAP query.
     :param server: server to connect to.
+    :param base: base of the LDAP request, leave empty to get all data.
     :param username: username to use in the LDAP bind, leave empty for anonymous bind.
     :param password: password to use in the LDAP bind, leave empty for anonymouse bind.
-    :param base: base of the LDAP request, leave empty to get all data.
+    :param krb_auth: use Kerberos authentication instead of plaintext.
     :return list: list of LDAP entries."""
 
     server = Server(server, get_info=ALL)
-    if username.split(",")[0] != "uid=" and password != "":
+    if krb_auth:
+        conn = Connection(server, authentication=SASL, sasl_mechanism=GSSAPI)
+    elif username.split(",")[0] != "uid=" and password != "":
         conn = Connection(server, user=username, password=password)
     else:
         conn = Connection(server)

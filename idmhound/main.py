@@ -16,8 +16,9 @@ def main():
     parser.add_argument("-u", "--username", action="store", default="", help="Username to query the realm.")
     parser.add_argument("-p", "--password", action="store", default="", help="Password of the account to query the realm.")
     parser.add_argument("-dc", "--domain-controller", action="store", required=True, help="Server to query.")
-    parser.add_argument("-dn", "--base-dn", action="store", default="")
-    parser.add_argument("-l", "--legacy", action="store_true", default=False)
+    parser.add_argument("-dn", "--base-dn", action="store", default="", help="Base DN to query.")
+    parser.add_argument("-l", "--legacy", action="store_true", default=False, help="Output the file in the legacy Bloodhound format.")
+    parser.add_argument("-k", "--kerberos", action="store_true", default=False, help="Use kerberos authentication.")
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout, encoding="utf-8", filemode="w", level=logging.INFO,
@@ -27,7 +28,7 @@ def main():
     logger.info(f"Getting LDAP data of {args.domain}...")
     ldap_realm = "".join([",dc=" + dc for dc in args.domain.split(".")])
     bind_dn = f"uid={args.username},cn=users,cn=accounts{ldap_realm}"
-    data = ldap.collect(args.domain_controller, bind_dn, args.password, args.base_dn)
+    data = ldap.collect(args.domain_controller, args.base_dn, bind_dn, args.password, args.kerberos)
     logger.info(f"Found {len(data)} LDAP entries.")
     sid = identify_realm_sid(data, args.domain)
     logger.info(f"Realm SID: {sid}")
