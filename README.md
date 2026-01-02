@@ -64,7 +64,7 @@ LIMIT 1000;
 
 *List users part of groups that can SSH*
 ```
-MATCH p=(s:User)-[:MemberOf*0..]->(g)-[:HBAC_sshd]->(t)
+MATCH p=(s:User)-[:MemberOf*0..]->(g)-[:HBAC_sshd|HBAC_all]->(t)
 RETURN p
 LIMIT 1000
 ```
@@ -72,15 +72,15 @@ LIMIT 1000
 *List users part of groups that can FTP*
 ```
 MATCH p=(s:User)-[:MemberOf*0..]->(g)-[e]->(t)
-WHERE type(e) CONTAINS 'HBAC' AND type(e) CONTAINS 'ftp'
+WHERE type(e) CONTAINS 'HBAC' AND (type(e) CONTAINS 'ftp' or type(e) CONTAINS 'all')
 RETURN p
 LIMIT 1000
 ```
 
 *List users part of groups that can RDP (Xrdp and GNOME RDP)*
 ```
-MATCH p=(s)-[e]->(t)
-WHERE type(e) CONTAINS 'HBAC' AND type(e) IN ['xrdp', 'xrdp-sesman', 'gnome-remote-desktop']
+MATCH p=(s:User)-[:MemberOf*0..]->(g)-[e]->(t)
+WHERE type(e) CONTAINS 'HBAC' AND (type(e) CONTAINS 'xrdp' or type(e) CONTAINS  'xrdp-sesman' or type(e) CONTAINS 'gnome-remote-desktop' or type(e) CONTAINS 'all')
 RETURN p
 LIMIT 1000
 ```

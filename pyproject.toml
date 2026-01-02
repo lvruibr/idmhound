@@ -10,7 +10,7 @@ authors = [{name="Lvruibr", email="lvruibr@protonmail.ch"}]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["ldap3>=2.9.1"]
+dependencies = ["ldap3>=2.9.1", "gssapi>=1.9.0"]
 
 [tool.setuptools.packages]
 find = {}
