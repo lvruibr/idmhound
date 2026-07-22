@@ -20,7 +20,7 @@ def collect(server: str, base: str, username: str = "", password: str = "", krb_
     :param krb_auth: use Kerberos authentication instead of plaintext.
     :return list: list of LDAP entries."""
 
-    server = Server(server, get_info=ALL)
+    server = Server(server, use_ssl=True, get_info=ALL)
     if krb_auth:
         conn = Connection(server, authentication=SASL, sasl_mechanism=GSSAPI)
     elif username.split(",")[0] != "uid=" and password != "":
