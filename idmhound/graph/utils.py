@@ -3,6 +3,7 @@
 import re
 import json
 import logging
+import hashlib
 from datetime import datetime
 
 logger = logging.getLogger()
@@ -71,8 +72,10 @@ def identify_realm_sid(data: list, realm: str) -> str:
             sid = "-".join(sid.split("-")[:-1])
             return sid
     else:
-        raise ValueError("Cannot identify realm SID.")
-
+        realm_hash = hashlib.sha256(realm.encode()).digest()
+        sid = f"S-1-5-21-{str(int.from_bytes(realm_hash[:4], "big"))}-{str(int.from_bytes(realm_hash[4:8], "big"))}-{str(int.from_bytes(realm_hash[8:12], "big"))}"
+        logger.warning(f"Cannot identify realm SID. Generating pseudo-SID: {sid}")
+        return sid
 
 def legacy_save(domains, users, groups, computers, hbac, sudoer, iparights):
     """Save data in the legacy file format.

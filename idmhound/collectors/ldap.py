@@ -124,13 +124,12 @@ def legacy_parse(raw, realm, sid) -> tuple:
         realm_object = None
         if re.match(f"cn=.+,cn=ad,cn=etc{ldap_realm}", dn):
             realm_object = LegacyDomain(dn, entry["cn"], entry["ipaNTDomainGUID"], entry["ipaNTFlatName"],
-                                        entry["ipaNTSecurityIdentifier"], sid)
+                                        entry["ipaNTSecurityIdentifier"] if "ipaNTSecurityIdentifier" in entry.entry_attributes_as_dict.keys() else sid, sid)
             domains.append(realm_object)
         elif re.match(f"uid=.+,cn=users,cn=accounts{ldap_realm}", dn):
             realm_object = LegacyUser(dn, entry["uid"], entry["gecos"], entry["homeDirectory"], entry["ipaUniqueID"],
-                                      entry["ipaNTSecurityIdentifier"], entry["krbCanonicalName"],
-                                      entry["krbPrincipalName"],
-                                      entry["loginShell"], entry["sn"], entry["uid"], entry["uidNumber"], sid)
+                                      entry["ipaNTSecurityIdentifier"] if "ipaNTSecurityIdentifier" in entry.entry_attributes_as_dict.keys() else f"{sid}-{str(num_objects + index)}",
+                                      entry["krbCanonicalName"], entry["krbPrincipalName"], entry["loginShell"], entry["sn"], entry["uid"], entry["uidNumber"], sid)
             users.append(realm_object)
         elif re.match(f"cn=.+,cn=groups,cn=accounts{ldap_realm}", dn) and all(
                 attr in entry.entry_attributes_as_dict.keys() for attr in
